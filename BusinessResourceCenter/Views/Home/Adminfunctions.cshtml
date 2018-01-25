@@ -1,0 +1,319 @@
+﻿@{
+    ViewBag.Title = "Administrative Functions";
+}
+
+<script type="text/javascript" language="javascript" src="https://cdn.datatables.net/1.10.16/js/jquery.dataTables.min.js">
+</script>
+<script type="text/javascript" src="~/Scripts/jquery-ui-timepicker-addon.js"></script>
+<script src="~/Scripts/jquery-ui-sliderAccess.js" type="text/javascript"></script>
+<link rel="stylesheet" href="https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.4/themes/smoothness/jquery-ui.css">
+
+<link rel="stylesheet" type="text/css" href="~/Content/jquery-ui-timepicker-addon.css" />
+
+<script>
+    var formtype = "";
+
+    $(document).ready(function () {
+
+        $("#EditFormDialog").dialog({
+            autoOpen: false,
+            height: 350,
+            width: 450,
+            modal: true
+        });
+
+        $("#divSelectWorkFlow").hide();
+        $("#frmChangeOwner").hide();
+        $("#frmAdjustTime").hide();
+        
+        $("#lnkChgOwn").click(function () {
+            document.getElementById("selectedWFID").value = "";
+            document.getElementById("selectedWorkflow").value = "";
+            
+            $("#divSelectWorkFlow").show();
+            $("#frmAdjustTime").hide();
+            formtype = "changeowner";
+        });
+        $("#lnkAdjustTime").click(function () {
+            document.getElementById("selectedWFID").value = "";
+            document.getElementById("selectedWorkflow").value = "";
+
+            $("#divSelectWorkFlow").show();
+            $("#frmChangeOwner").hide();
+            formtype = "adjusttime";
+        });
+        
+        //CHANGE OWNER JAVASCRIPT 
+        $("#btnNewOwner").click(function () {
+            $.ajax({
+                url: "SaveNewOwner",
+                data: {
+                    wfNumber: document.getElementById("selectedWFID").value,
+                    CurrOwner: document.getElementById("CurrOwnerID").value,
+                    NewOwner: document.getElementById("newOwnerID").value
+                },
+                type: "GET",
+                async: false,
+                success: function (result) {
+                    $.map(result, function (el) {
+                        $("#CurrOwner").html("Current Workflow ID: " + wfid + " Current Owner:" + el.fullname)
+                    });
+                }
+            });
+        });
+
+        $('#selectedWorkflow').autocomplete(
+       {
+           change: function (event, ui) {
+               if (ui.item == null) {
+                   $("#selectedWorkflow").val('');
+                   $("#selectedWorkflow").focus();
+               }
+           },
+           delay: 0,
+           minLength: 3,
+           maxResults: 10,
+           source: function (query, response) {
+               $.ajax(
+                 {
+                     url: "getWorkflowList",
+                     dataType: "json",
+                     async: false,
+                     data: { searchPhrase: query.term },
+                     success: function (result) {
+                         response($.map(result, function (el) {
+                             return {
+                                 label: el.wfTitle,
+                                 value: el.wfNumber
+                             };
+                         }));
+                     }
+                 });
+           },
+           select: function (event, ui) {
+               this.value = ui.item.value;
+               $('#selectedWorkflow').val(ui.item.label);
+               $('#selectedWFID').val(ui.item.value);
+               //get the owner by selecting the latest workflowtimestamps with a status of checkedout(2)
+               GetOwner(ui.item.value);
+               //now based on the type of of function we are trying to perform show the correct form.
+               DisplayFormType();
+               event.preventDefault();
+           }
+       });
+
+        function DisplayFormType()
+        {
+            switch (formtype)
+            {
+                case "changeowner":
+                    $("#frmChangeOwner").show();
+                    break;
+                case "adjusttime":
+                    GetWorkFlowTimeStamps();
+                    $("#frmAdjustTime").show();
+                    break;
+            }
+        }
+
+        function GetOwner(wfid)
+        {
+                $.ajax({
+                    url: "GetCurrOwner",
+                    data: {
+                        wfNumber: wfid
+                    },
+                    type: "GET",
+                    async: false,
+                    success: function (result) {
+                        $.map(result, function (el) {
+                            $("#CurrOwner").html("Current Workflow ID: " + wfid + " Current Owner:" + el.fullname)
+                            $('#CurrOwnerID').val(el.UserId);
+                        });
+                    }
+                });
+        }
+
+        $('#newOwner').autocomplete(
+        {
+         change: function (event, ui) {
+             if (ui.item == null) {
+                 $("#newOwner").val('');
+                 $("#newOwner").focus();
+             }
+         },
+         delay: 0,
+         minLength: 3,
+         maxResults: 10,
+         source: function (query, response) {
+             $.ajax(
+               {
+                   url: "getWorkFlowUserList",
+                   dataType: "json",
+                   async: false,
+                   data: { searchPhrase: query.term },
+                   success: function (result) {
+                       response($.map(result, function (el) {
+                           return {
+                               label: el.fullname,
+                               value: el.UserId
+                           };
+                       }));
+                   }
+               });
+         },
+         select: function (event, ui) {
+             this.value = ui.item.value;
+             $('#newOwner').val(ui.item.label);
+             $('#newOwnerID').val(ui.item.value);
+            event.preventDefault();
+         }
+     });
+
+
+});
+
+    //ADJUST TIME JAVASCRIPT FUNCTIONS
+
+    function GetWorkFlowTimeStamps() {
+
+        var tablestring = "<table id=\"wftimestampstable\" class=\"table\"><thead><tr><th><b>Time Stamp</b></th><th><b>User</b></th><th><b>Status</b></th><th>&nbsp;</th></thead><tbody>";
+
+        $.ajax({
+            url: "GetWFTimeStampsJson",
+            data: {
+                wfNumber: document.getElementById("selectedWFID").value
+            },
+            type: "GET",
+            async: false,
+            success: function (result) {
+                //alert(JSON.stringify(result));
+
+                for (var i = 0; i < result.length; i++) {
+                    var obj = result[i];
+
+                    var newtimestampdate = new Date(JSON.parse(obj.timestamp.replace("/Date(", "").replace(")/", "")));
+
+                    tablestring += "<tr><td>" + newtimestampdate + "</td><td>" + obj.participant + "</td><td>" + obj.wfStatus + "</td><td>";
+                    tablestring += "<a href='#' onclick = \"EditTime(\'" + document.getElementById("selectedWFID").value + "\',\'" + obj.wftsid + "\', \'" + newtimestampdate + "\', \'" + obj.wftsid + "\')\">Edit</a>";
+                    tablestring += "</td></tr>";
+                }
+
+                tablestring += "</tbody></table>";
+                $("#wftimestamps").html("");
+                $("#wftimestamps").append(tablestring);
+
+                tablestring = "";
+                $('#wftimestampstable').DataTable({
+                    "dom": "<'row'<'col-sm-3'l><'col-sm-6 text-center'B><'col-sm-3'f>>" +
+                         "<'row'<'col-sm-12'tr>>" +
+                         "<'row'<'col-sm-5'i><'col-sm-7'p>>",
+                    "buttons": [
+                        'print', 'copyHtml5', 'excelHtml5', 'csvHtml5', 'pdfHtml5'
+                    ],
+                    "iDisplayLength": 25,
+                    "bFilter": false,
+                    "lengthChange": false
+                });
+            }
+        });
+    }
+
+    function EditTime(wfNumber, wfTimeStampID, currentdtim, WFTSID) {
+
+        $('#dispCurrentTime').html(currentdtim);
+        $('#hidWFTSID').val(WFTSID);
+        
+        $('#txtnewdtimstamp')
+             .datetimepicker(
+               {
+                   timeFormat: "hh:mm tt",
+                   stepHour: 1,
+                   stepMinute: 6,
+                   showTimezone: false,
+
+                   timezoneList: [
+                     { value: -300, label: 'EST' },
+                     { value: -360, label: 'CST' },
+                     { value: -420, label: 'MST' },
+                     { value: -480, label: 'PST' }
+                   ]
+               });
+
+        $("#EditFormDialog").dialog("open");
+       
+    }
+
+    function SaveNewTime()
+    {
+            $.ajax({
+                url: "SaveWFTSNewTimeStamp",
+                data: {
+                    newTSDate: document.getElementById("txtnewdtimstamp").value,
+                    wfTSID: document.getElementById("hidWFTSID").value,
+                    reason: document.getElementById("taReason").value
+                },
+                type: "GET",
+                async: false,
+                success: function (result) {
+                    alert("You have successfully changed the date of this item.");
+                    GetWorkFlowTimeStamps();
+                    //close the form
+                    $("#EditFormDialog").dialog("close");
+                }
+            });
+    }
+
+</script>
+
+<h2>@ViewBag.Title</h2>
+
+<ul>
+    <li><a href="#" id="lnkChgOwn">Change Owner</a></li>
+    <li><a href="#" id="lnkAdjustTime">Adjust Time</a></li>
+</ul>
+
+<!-- Select Workflow to Edit-->
+
+<div id="divSelectWorkFlow">
+    <input type="text" id="selectedWorkflow" name="selectedWorkflow" placeholder="Workflow Search...." />
+    <INPUT type="hidden" id="selectedWFID" name="selectedWFID">
+</div>
+
+<!--Change owner form-->
+<div id="frmChangeOwner">
+  <div id="CurrOwner"></div><input type="text" id="newOwner" name="newOwner" placeholder="Search for Employee" />
+    <INPUT type="hidden" id="newOwnerID" name="newOwnerID"><input type="hidden" id="CurrOwnerID" name="CurrOwnerID" /><input type="button" id="btnNewOwner" name="btnNewOwner" value="Enter" />
+</div>
+
+
+<!--Adjust Time Form-->
+<div id="frmAdjustTime">
+    <!--Build the list of time events for this workflow. Allow for edits of time. Record notes and log when a time has been adjusted. Require a reason for the time adjustment.-->
+    <div id="wftimestamps">
+    </div>
+</div>
+
+<div id="EditFormDialog">
+    <table class="table">
+        <tr>
+            <td><b>Current Time</b></td>
+            <td><b>New Time</b></td>
+        </tr>
+        <tr>
+            <td><div id="dispCurrentTime"></div></td>
+            <td><input type="text" id="txtnewdtimstamp" name="txtnewdtimstamp" /></td>
+        </tr>
+        <tr>
+            <td>Reason:<textarea id="taReason" name="taReason"></textarea></td>
+        </tr>
+        <tr>
+            <td colspan="2"><input type="button" id="btnSaveNewTime" name="btnSaveNewTime" value="Save" onclick="SaveNewTime()" />
+            <input type="hidden" id="hidWFTSID" name="hidWFTSID"  /></td>
+        </tr>
+    </table>
+</div>
+
+
+
+

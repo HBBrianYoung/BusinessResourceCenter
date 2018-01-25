@@ -1,0 +1,219 @@
+﻿@model BusinessResourceCenter.Models.AllDashInfo
+
+@{
+    ViewBag.Title = "index";
+}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.5.0/Chart.bundle.min.js"></script>
+<script>
+    var requestTimes = [];
+    var requestAmts = [];
+        $.ajax({
+            url: "dashboard/GetBusyTime",
+            type: "GET",
+            async: false,
+            success: function (result) {
+                for (var i = 0; i < result.length; i++) {
+                    var obj = result[i];
+
+                    if (obj.starthour < 12)
+                    {
+                        if (obj.starthour == 0)
+                        {
+                            requestTimes.push("12:00AM");
+                        } else {
+                            requestTimes.push(obj.starthour + ":00AM");
+                        }
+                    } else {
+                        if ((obj.starthour - 12) == 0)
+                        {
+                            requestTimes.push("12:00PM");
+                        } else {
+                            requestTimes.push((obj.starthour - 12) + ":00PM");
+                        }
+                    }
+                    requestAmts.push(obj.starthourcount);
+                }
+            }
+        });
+    
+/*
+        requestTimes.push("12:00AM");
+        requestAmts.push(46);
+        requestTimes.push(1 + ":00AM");
+        requestAmts.push(23);
+        requestTimes.push(2 + ":00AM");
+        requestAmts.push(12);
+        requestTimes.push(3 + ":00AM");
+        requestAmts.push(4);
+        requestTimes.push(4 + ":00AM");
+        requestAmts.push(4);
+        requestTimes.push(5 + ":00AM");
+        requestAmts.push(7);
+        requestTimes.push(6 + ":00AM");
+        requestAmts.push(4);
+        requestTimes.push(7 + ":00AM");
+        requestAmts.push(20);
+        requestTimes.push(8 + ":00AM");
+        requestAmts.push(221);
+        requestTimes.push(9 + ":00AM");
+        requestAmts.push(184);
+        requestTimes.push(10 + ":00AM");
+        requestAmts.push(175);
+        requestTimes.push(11 + ":00AM");
+        requestAmts.push(190);
+        requestTimes.push("12:00PM");
+        requestAmts.push(180);
+        requestTimes.push(1 + ":00PM");
+        requestAmts.push(182);
+        requestTimes.push(2 + ":00PM");
+        requestAmts.push(181);
+        requestTimes.push(3 + ":00PM");
+        requestAmts.push(189);
+        requestTimes.push(4 + ":00PM");
+        requestAmts.push(233);
+        requestTimes.push(5 + ":00PM");
+        requestAmts.push(197);
+        requestTimes.push(6 + ":00PM");
+        requestAmts.push(313);
+        requestTimes.push(7 + ":00PM");
+        requestAmts.push(222);
+        requestTimes.push(8 + ":00PM");
+        requestAmts.push(222);
+        requestTimes.push(9 + ":00PM");
+        requestAmts.push(148);
+        requestTimes.push(10 + ":00PM");
+        requestAmts.push(111);
+        requestTimes.push(11 + ":00PM");
+        requestAmts.push(60);
+        */
+
+
+        var barChartData = {
+        labels: requestTimes,
+        datasets: [{
+        label: 'Workflows Created By Hour',
+        backgroundColor: "#FF0000",
+        borderColor: "#000000",
+        borderWidth: 1,
+        data: requestAmts
+        }]
+        };
+
+        window.onload = function () {
+        var ctxbar = document.getElementById("busytimecanvas").getContext("2d");
+        window.myBar = new Chart(ctxbar, {
+        type: 'bar',
+        data: barChartData,
+        options: {
+        responsive: true,
+        legend: {
+        position: 'top',
+        },
+        title: {
+        display: false,
+        text: ''
+        }
+        }
+        });
+        };
+
+        </script>
+        <style tyep="text/css">
+            .threed {
+                font-size: 50px;
+                text-shadow: 3px 5px 10px #000;
+            }
+        </style>
+
+        <h2>DashBoard</h2>
+        <div class="container">
+            <div class="row">
+                <div class="col-md-7">
+                    <h3>Open Workflows</h3>
+                    <table class="table">
+                        <tr>
+                            <th>
+                                Workflow Number
+                            </th>
+                            <th>
+                                Title
+                            </th>
+                            <th>
+                                Requestor Name
+                            </th>
+                            <th>
+                                Created Date
+                            </th>
+                            <th>
+                                Deadline
+                            </th>
+                        </tr>
+
+                        @foreach (var item in Model.ViewAllOpenWorkflows)
+                        {
+                            <tr>
+                                <td>
+                                    @Html.DisplayFor(modelItem => item.wfNumber)
+                                </td>
+                                <td>
+                                    @Html.DisplayFor(modelItem => item.wfTitle)
+                                </td>
+                                <td>@Html.DisplayFor(modelItem => item.Requestor)</td>
+                                <td>@Html.DisplayFor(modelItem => item.createddate)</td>
+                                <td>@Html.DisplayFor(modelItem => item.deadline)</td>
+                            </tr>
+                        }
+                    </table>
+                    <h3>Working Workflows</h3>
+                    <table class="table">
+                        <tr>
+                            <th>
+                                Workflow Number
+                            </th>
+                            <th>
+                                Title
+                            </th>
+                            <th>
+                                Requestor Name
+                            </th>
+                            <th>
+                                Created Date
+                            </th>
+                            <th>
+                                Deadline
+                            </th>
+                            <th>
+                                User
+                            </th>
+                        </tr>
+
+                        @foreach (var item in Model.workingworkflows)
+                        {
+                            <tr>
+                                <td>
+                                    @Html.DisplayFor(modelItem => item.wfNumber)
+                                </td>
+                                <td>
+                                    @Html.DisplayFor(modelItem => item.wfTitle)
+                                </td>
+                                <td>@Html.DisplayFor(modelItem => item.Requestor)</td>
+                                <td>@Html.DisplayFor(modelItem => item.createddate)</td>
+                                <td>@Html.DisplayFor(modelItem => item.deadline)</td>
+                                <td>@Html.DisplayFor(modelItem => item.participant)</td>
+                            </tr>
+                        }
+                    </table>
+                </div>
+                <div class="col-md-5">
+                    <!--I don't think this is right but it works for now. How can I return one string from the model-->
+                    <h3>Avg. Closing Time</h3>
+                    <div id="avgclosingtime" class="threed">
+                       @{ var daysworked = @Model.avgclosetime / 24; }
+                        @daysworked Days
+                    </div>
+                    <h3>Workflows Created By Hour</h3>
+                    <canvas id="busytimecanvas"></canvas>
+
+                </div>
+            </div>
+        </div>

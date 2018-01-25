@@ -3,9 +3,19 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>@ViewBag.Title - My ASP.NET Application</title>
-    @Styles.Render("~/Content/css")
+    <title>@ViewBag.Title</title>
+
+    <link href="~/Content/Site.css" rel="stylesheet" />    
+    <link href="~/Content/jquery-ui.min.css" rel="stylesheet" />    
     @Scripts.Render("~/bundles/modernizr")
+    @Scripts.Render("~/bundles/jquery")
+    @Scripts.Render("~/bundles/jqueryui")
+    @Scripts.Render("~/bundles/bootstrap")
+    @RenderSection("scripts", required: false)
+
+    <link href="http://hbdev:89/Assets/css/webapp/hb-bootstrap.css" id="site-style" rel="stylesheet">
+    <link href="http://hbdev:89/Assets/css/webapp/hb-webapp.css" rel="stylesheet">
+
 </head>
 <body>
     <div class="navbar navbar-inverse navbar-fixed-top">
@@ -16,14 +26,15 @@
                     <span class="icon-bar"></span>
                     <span class="icon-bar"></span>
                 </button>
-                @Html.ActionLink("Application name", "Index", "Home", new { area = "" }, new { @class = "navbar-brand" })
+                @Html.ActionLink("Business Resource Center", "Index", "Home", new { area = "" }, new { @class = "navbar-brand" })
             </div>
             <div class="navbar-collapse collapse">
-                <ul class="nav navbar-nav">
-                    <li>@Html.ActionLink("Home", "Index", "Home")</li>
-                    <li>@Html.ActionLink("About", "About", "Home")</li>
-                    <li>@Html.ActionLink("Contact", "Contact", "Home")</li>
-                </ul>
+                    <ul class="nav navbar-nav">
+                        <li>@Html.ActionLink("View All Workflows", "Index", "Home")</li>
+                        <li>@Html.ActionLink("New Workflow", "Create", "Home")</li>
+                        <li>@Html.ActionLink("Administrative Functions", "Adminfunctions", "Home")</li>
+                        <li>@Html.ActionLink("Dashboard", "Index", "Dashboard")</li>
+                    </ul>
             </div>
         </div>
     </div>
@@ -31,12 +42,9 @@
         @RenderBody()
         <hr />
         <footer>
-            <p>&copy; @DateTime.Now.Year - My ASP.NET Application</p>
+            <p>&copy; @DateTime.Now.Year - Haynes and Boone, LLP</p>
         </footer>
     </div>
 
-    @Scripts.Render("~/bundles/jquery")
-    @Scripts.Render("~/bundles/bootstrap")
-    @RenderSection("scripts", required: false)
 </body>
 </html>

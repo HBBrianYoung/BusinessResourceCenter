@@ -1,6 +1,11 @@
 ﻿body {
-    padding-top: 50px;
     padding-bottom: 20px;
+}
+
+section[role=sub-nav] {
+    background: #e6e6e6;
+    z-index: 999;
+    box-shadow: 0 3px 5px rgba(0,0,0,.4);
 }
 
 /* Set padding to keep content from hitting the edges */
