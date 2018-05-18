@@ -1,12 +1,12 @@
 ﻿using System;
 using System.Data;
-using System.Data.Entity;
 using System.Collections.Generic;
 using System.Linq;
 using System.Web;
 using System.Web.Mvc;
 using System.Data.Entity.Validation;
 using BusinessResourceCenter.Models;
+using System.IO;
 
 
 
@@ -49,14 +49,70 @@ namespace BusinessResourceCenter.Controllers
                                select new workflowtimestampshistory { stamp = wfn.stamp, participant = wfn.participant, wfstatus = wfs.wfstatus, wfNumber = wfn.wfNumber};
             workflowHist = workflowHist.Where(w => w.wfNumber == id);
 
-            var model = new AllWFInfo { ViewWorkFlowData = workflow, wfnotes = workflownts.ToList(), workflowHistory  = workflowHist.ToList()};
+            /*
+            * Get the files associated with this workflow
+
+             var model = new allWFfiles { wffilelist = vWorkflowfiles.ToList() };
+
+             */
+            var wffiles = from wf in db.workflowfiles
+                                 select wf;
+
+            wffiles = wffiles.Where(w => w.wfID == id);
+
+            var model = new AllWFInfo { ViewWorkFlowData = workflow, wfnotes = workflownts.ToList(), workflowHistory = workflowHist.ToList(), workflowfileList = wffiles.ToList() };
 
             return View(model);
         }
 
         public ActionResult Create()
         {
+           
             return View();
+
+        }
+
+        [HttpPost]
+        public void DocumentUpload(IEnumerable<HttpPostedFileBase> upfile)
+        {
+
+            foreach (var file in upfile)
+            {
+                if (file.ContentLength > 0)
+                {
+                   
+                    var fileName = Path.GetFileName(file.FileName);
+                    string outuniquefilename = DateTime.Now.ToString().Replace("/", "").Replace(":", "") + fileName;
+                    var path = Path.Combine(Server.MapPath("~/uploads"), outuniquefilename);
+                    file.SaveAs(path);
+
+                    //upload the file information to the database and save with the session id
+                    SaveDocumentToDB(fileName, outuniquefilename);
+                }
+            }
+
+            return;
+        }
+
+        public void SaveDocumentToDB(string filename, string uniquename)
+        {
+            
+
+            DashDBContext db = new DashDBContext();
+
+            workflowfiles wff = new workflowfiles
+            {
+                filename = filename,
+                wfsessionid = Session.SessionID.ToString(),
+                upload_dtim = DateTime.Now,
+                uniquefilename = uniquename
+            };
+
+            db.workflowfiles.Add(wff);
+
+            db.SaveChanges();
+
+            return;
         }
 
         [HttpPost]
@@ -77,7 +133,9 @@ namespace BusinessResourceCenter.Controllers
 
                     int wfid = workflow.wfNumber;
 
-                    SaveTimeStamp(wfid,1, Request.Form["Requestor"].ToString());
+                    SaveTimeStamp(wfid,1, Request.Form["Submitter"].ToString());
+
+                    SaveFilesToWorkflow(wfid);
                 }
                 catch (DbEntityValidationException e)
                 {
@@ -94,7 +152,22 @@ namespace BusinessResourceCenter.Controllers
                     throw;
                 }
             }
+            
             return View();
+        }
+
+        public void SaveFilesToWorkflow(int wfid)
+        {
+            //now that the workflow has been created we need to clean up the files that they uploaded and put the workflow ID on them
+            using (var db = new DashDBContext())
+            {
+                foreach (var wffiles in db.workflowfiles.Where(x => x.wfsessionid.Equals(Session.SessionID.ToString())).ToList())
+                {
+                    wffiles.wfID = wfid;
+                }
+                db.SaveChanges();
+            }
+            return;
         }
 
         public ActionResult Adminfunctions()
@@ -105,7 +178,7 @@ namespace BusinessResourceCenter.Controllers
         {
             using (var context = new DashDBContext())
             {
-                var query = context.Database.SqlQuery<Searchworkflow>("SELECT wfTitle, wfNumber FROM workflows WHERE wfTitle like '%" + searchPhrase + "%' OR wfNumber like '%" + searchPhrase + "%' ORDER BY wfTitle").ToList();
+                var query = context.Database.SqlQuery<Searchworkflow>("SELECT wfTitle, wfNumber, Requestor, Createddate, deadline FROM workflows WHERE wfTitle like '%" + searchPhrase + "%' OR wfNumber like '%" + searchPhrase + "%' ORDER BY wfTitle").ToList();
                 return Json(query, JsonRequestBehavior.AllowGet);
             }
         }
@@ -235,7 +308,7 @@ namespace BusinessResourceCenter.Controllers
             return;
         }
 
-        public  void ChangeWorkflowStatus(int newstatus, int wfNumber)
+        public void ChangeWorkflowStatus(int newstatus, int wfNumber)
         {
             DashDBContext db = new DashDBContext();
 

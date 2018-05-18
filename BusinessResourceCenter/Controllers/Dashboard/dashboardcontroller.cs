@@ -51,5 +51,18 @@ namespace BusinessResourceCenter.Controllers
                 return Json(query, JsonRequestBehavior.AllowGet);
             }
         }
+
+
+        public JsonResult getOpenWorkflows()
+        {
+            using (var context = new DashDBContext())
+            {
+                var query = context.Database.SqlQuery<Searchworkflow>("SELECT workflows.wfnumber, workflows.wftitle, workflows.Requestor, workflows.createddate, workflows.deadline, Count(*) count FROM workflows " +
+                                                            " INNER JOIN workflowtimestamps ON workflows.wfNumber = workflowtimestamps.wfnumber " +
+                                                            " GROUP BY workflows.wfnumber, workflows.wftitle, workflows.Requestor, workflows.createddate, workflows.deadline " +
+                                                            " HAVING COUNT(*) = 1").ToList();
+                return Json(query, JsonRequestBehavior.AllowGet);
+            }
+        }
     }
 }

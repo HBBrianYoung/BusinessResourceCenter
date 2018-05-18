@@ -42,8 +42,8 @@ namespace BusinessResourceCenter.Models
         public int wfNumber { get; set; }
         public string wfTitle { get; set; }
         public string Requestor { get; set; }
-        public DateTime createddate{ get; set; }
-        public DateTime deadline { get; set; }
+        public DateTime? createddate{ get; set; }
+        public DateTime? deadline { get; set; }
     }
 
     public class vWorkflows
@@ -134,13 +134,33 @@ namespace BusinessResourceCenter.Models
         public DateTime notetimestamp { get; set; }
     }
 
+    public class workflowfiles
+    {
+        [Key, Column(Order = 0)]
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+        public int? wffileid {get; set;}
+        public string filename { get; set; }
+        public int? wfID { get; set; }
+        public string NDlink { get; set; }
+        public string wfsessionid { get; set; }
+        public DateTime upload_dtim { get; set; }
+        public string uniquefilename { get; set;  }
+
+
+    }
+
     public class AllWFInfo
     {
         public vAllWFLastStatusLists ViewWorkFlowData { get; set; }
         public List<workflownotes> wfnotes { get; set; }
         public List<workflowtimestampshistory> workflowHistory { get; set; }
+        public List<workflowfiles> workflowfileList { get; set; }        
     }
 
+    public class allWFfiles
+    {
+        public List<workflowfiles> wffilelist { get; set; }
+    }
 
     public class DashDBContext : DbContext
     {
@@ -155,6 +175,7 @@ namespace BusinessResourceCenter.Models
         public DbSet<workflowstatus> workflowstatus { get; set; }
 
         public DbSet<busytime> busytime { get; set; }
+        public DbSet <workflowfiles> workflowfiles { get; set; }
     }
 
 
