@@ -467,11 +467,22 @@
         </tr>
         <tr>
             <td>Supporting Documents: ( NetDocs IDs)</td>
-            <td><input type="text" id="netdocid" name="netdocid" placeholder="Insert Comma Seperated Net Docs ID..." /></td>
+            <td></td>
         </tr>
         <tr>
-            <td>Upload Documents:</td>
-            <td><input type="file" /></td>
+            <td>Uploaded Documents:</td>
+            <td>
+                <table class="table">
+                    @{
+                        foreach (var item in Model.workflowfileList)
+                        {
+                            <tr>
+                                <td><a href="~/uploads/@item.uniquefilename" target="newwin">@item.filename</a></td>
+                            </tr>
+                        }
+                    }
+                </table>
+            </td>
         </tr>
         <tr>
             <td></td>

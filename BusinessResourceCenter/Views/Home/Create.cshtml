@@ -1,6 +1,4 @@
-﻿@model BusinessResourceCenter.Models.workflows
-
-@{
+﻿@{
     ViewBag.Title = "Create New Project";
 }
 
@@ -10,13 +8,58 @@
 
 <link rel="stylesheet" type="text/css" href="~/Content/jquery-ui-timepicker-addon.css" />
 <script>
-    
+
     jQuery.ui.autocomplete.prototype._resizeMenu = function () {
         var ul = this.menu.element;
         ul.outerWidth(this.element.outerWidth());
     }
+
+
+    var uploadControlCounter = 0;
+
+    function createFileUpload() {
+        $("#uploadUI")
+                .append(
+                    $("<div />")
+                        .attr("id", "fileContainer" + uploadControlCounter)
+                    .append(
+                        $("<input />")
+                            .attr("type", "file")
+                            .attr("name", "upfile")
+                            .attr("id", "upfile" + uploadControlCounter)
+            )
+        .append(" ")
+                    .append(
+                        $("<a />")
+                    .attr("href", "#")
+                    .attr("class", "removeUpload")
+                    .text("Remove")
+            )
+        );
+
+        uploadControlCounter++;
+    }
+
     $(document).ready(function () {
 
+        $("#addFileUpload").click(function (e) {
+            e.preventDefault();
+            createFileUpload();
+        });
+
+        $("#uploadUI").on("click", "a.removeUpload", function (e) {
+            e.preventDefault();
+            $(this).parent().remove();
+        });
+
+        // Start by creating one file upload
+        createFileUpload();
+
+
+
+        $('#showPopup').click(function () {
+            $('#uploadForm').modal();
+        });
         $('#requestordisp').autocomplete(
         {
             change: function (event, ui) {
@@ -110,6 +153,47 @@
          });*/
 
     });
+
+    function UploadForms(event)
+    {
+        event.preventDefault();
+
+        var form = document.getElementById('uploadForm');
+        var uploadButton = document.getElementById('uploadbutton');
+        var formData = new FormData(form);
+        
+        uploadbutton.innerHTML = "Uploading...";
+
+        // Set up the request.
+        var xhr = new XMLHttpRequest();
+        // Open the connection.
+        xhr.open('POST', "@Url.Action("DocumentUpload", "Home")", true);
+        // Send the Data.
+        xhr.send(formData);
+
+        // Set up a handler for when the request finishes.
+        xhr.onload = function () {
+            if (xhr.status === 200) {
+                // File(s) uploaded.
+
+                var fields = document.getElementsByName("upfile");
+                for (var i = 0; i < fields.length; i++) {
+                    dispfilelist.innerHTML += fields[i].value.split('\\').pop().split('/').pop() + "<br>";
+                }
+
+                uploadButton.innerHTML = 'Upload';
+                $('#uploadForm').modal('hide');
+                //clean up the form by clearing out the files that have now been uploaded. 
+                //display the uploaded files on the create form
+               
+                
+            } else {
+                alert('An error occurred!');
+            }
+        };
+
+
+    }
 </script>
 <style>
     /* autocomplete adds the ui-autocomplete-loading class to the textbox when it is _busy_ */
@@ -147,8 +231,10 @@
         </tr>
         <tr>
             <td>Submitter</td>
-            <td>@User.Identity.Name.Substring(User.Identity.Name.LastIndexOf('\\') + 1)
-            <input type="hidden" name="Submitter" id="Submitter" value="@User.Identity.Name.Substring(User.Identity.Name.LastIndexOf('\\') + 1)" /> </td>
+            <td>
+                @User.Identity.Name.Substring(User.Identity.Name.LastIndexOf('\\') + 1)
+                <input type="hidden" name="Submitter" id="Submitter" value="@User.Identity.Name.Substring(User.Identity.Name.LastIndexOf('\\') + 1)" />
+            </td>
         </tr>
         <tr>
             <td><font color="red">*</font> Client Matter / Section</td>
@@ -169,17 +255,47 @@
             <td><input type="text" id="deadline" name="deadline" /></td>
         </tr>
         <tr>
-            <td>Supporting Documents: ( NetDocs IDs)</td>
-            <td><input type="text" id="netdocid" name="netdocid" placeholder="Insert Comma Seperated Net Docs ID..." /></td>
+            <td>Supporting Documents: ( NetDocs IDs) @Session.SessionID</td>
+            <td><input type="text" id="netdocid" name="netdocid" placeholder="Net Docs ID..." /></td>
         </tr>
         <tr>
             <td>Upload Documents:</td>
-            <td><input type="file" /></td>
+            <td>
+                <button type="button" class="btn btn-default" id="showPopup" name="showPopup">Attach Documents</button>
+                <div id="dispfilelist"></div>
+           
+            </td>
+        </tr>
+        <tr>
+            <td>Associated Files:</td>
+            <td></td>
         </tr>
         <tr>
             <td></td>
-            <td><input type="submit" value="Submit Request" /></td>
+            <td><input class="btn btn-default" type="submit" value="Submit Request" /></td>
         </tr>
     </table>
-}
+                    }
 <font color="red">*</font> Required field
+
+@using (Html.BeginForm("DocumentUpload", "Home", FormMethod.Post, new { enctype = "multipart/form-data", id = "uploadForm", @class = "modal fade", role = "dialog" }))
+{
+    @Html.AntiForgeryToken()
+  
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p id="uploadUI">
+            </div>
+            [<a href="#" id="addFileUpload">Upload another file...</a>]
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">close form</button>
+                <button type="submit" class="btn btn-success" id="uploadbutton" onclick="UploadForms(event)">Upload</button>
+            </div>
+        </div>
+    </div>
+}
+
